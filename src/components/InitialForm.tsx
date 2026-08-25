@@ -21,6 +21,7 @@ import {
 import { AuditProjectInput } from '../types';
 import { Tooltip } from './Tooltip';
 import { HowItWorksModal } from './HowItWorksModal';
+import { QUERY_FANOUT_PROXY_URL } from '../config';
 
 interface InitialFormProps {
   onSubmit: (input: AuditProjectInput) => void;
@@ -85,10 +86,10 @@ export const InitialForm: React.FC<InitialFormProps> = ({
     setSitemapMessage('Connecting to sitemap endpoint...');
 
     try {
-      const res = await fetch('/api/audit/fetch-sitemap', {
+      const res = await fetch(QUERY_FANOUT_PROXY_URL, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ sitemapUrl }),
+        body: JSON.stringify({ action: 'fetch-sitemap', sitemapUrl }),
       });
       const data = await res.json();
       if (!res.ok) {

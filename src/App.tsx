@@ -31,6 +31,7 @@ import { ContentOpportunitiesTab } from './components/tabs/ContentOpportunitiesT
 import { ActionPlanTab } from './components/tabs/ActionPlanTab';
 import { SavedAnalysesTab } from './components/tabs/SavedAnalysesTab';
 import { HowItWorksTab } from './components/tabs/HowItWorksTab';
+import { QUERY_FANOUT_PROXY_URL } from './config';
 
 import {
   LayoutDashboard,
@@ -202,13 +203,14 @@ export default function App() {
       setAnalysisStage(2);
       setLogMessages((prev) => [...prev, 'Generating AI-Predicted Query Fan-out clusters...']);
       
-      const fanoutRes = await fetch('/api/audit/predict-fanout', {
+      const fanoutRes = await fetch(QUERY_FANOUT_PROXY_URL, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
+          action: 'predict-fanout',
           seedPrompt: input.seedPrompt,
-          destinationOrSubject: input.destinationOrSubject,
-          targetAudience: input.targetAudience,
+          destination: input.destinationOrSubject,
+          audience: input.targetAudience,
           targetDomain: input.targetDomain,
           depth: input.depth,
         }),
@@ -237,13 +239,18 @@ export default function App() {
       for (let i = 1; i <= runsCount; i++) {
         setLogMessages((prev) => [...prev, `Executing Grounded Search Run ${i} of ${runsCount}...`]);
         try {
-          const runRes = await fetch('/api/audit/run-grounded', {
+          const runRes = await fetch(QUERY_FANOUT_PROXY_URL, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
+              action: 'run-grounded',
               prompt: input.seedPrompt,
+              destination: input.destinationOrSubject,
+              audience: input.targetAudience,
               runNumber: i,
+              totalRuns: runsCount,
               targetDomain: input.targetDomain,
+              competitorDomains: input.competitorDomains,
             }),
           });
           if (runRes.ok) {
@@ -274,10 +281,14 @@ export default function App() {
         `Matching target domain inventory (${input.targetDomain}) against fan-out queries...`,
       ]);
 
-      const coverageRes = await fetch('/api/audit/analyze-coverage', {
+      const coverageRes = await fetch(QUERY_FANOUT_PROXY_URL, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
+          action: 'analyze-coverage',
+          seedPrompt: input.seedPrompt,
+          destination: input.destinationOrSubject,
+          audience: input.targetAudience,
           queries: predictedQueries,
           groundedRuns: completedRuns,
           targetDomain: input.targetDomain,
