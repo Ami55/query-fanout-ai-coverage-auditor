@@ -1,0 +1,7 @@
+{
+  "name": "Query Fan-out Explorer",
+  "description": "Discover how a broad user question can expand into related searches, subtopics, entities and content opportunities.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
+
