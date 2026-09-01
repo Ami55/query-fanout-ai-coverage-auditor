@@ -70,14 +70,39 @@ async function readProxyError(response: Response, fallback: string): Promise<str
 
 function sanitizeProject(p: any): AuditProject {
   if (!p) return demoMontrealProject;
-  const queries = Array.isArray(p.queries) ? p.queries : [];
-  const entities = Array.isArray(p.entities) ? p.entities : [];
-  const citations = Array.isArray(p.citations) ? p.citations : [];
-  const coverage = Array.isArray(p.coverageAnalyses) ? p.coverageAnalyses : [];
+  const queries = Array.isArray(p.queries)
+    ? p.queries.map((q: any) => ({ ...q, relevantEntities: Array.isArray(q?.relevantEntities) ? q.relevantEntities : [] }))
+    : [];
+  const entities = Array.isArray(p.entities)
+    ? p.entities.map((e: any) => ({ ...e, relevantQueryClusters: Array.isArray(e?.relevantQueryClusters) ? e.relevantQueryClusters : [] }))
+    : [];
+  const citations = Array.isArray(p.citations)
+    ? p.citations.map((c: any) => ({
+        ...c,
+        associatedQueries: Array.isArray(c?.associatedQueries) ? c.associatedQueries : [],
+        supportedStatements: Array.isArray(c?.supportedStatements) ? c.supportedStatements : [],
+      }))
+    : [];
+  const coverage = Array.isArray(p.coverageAnalyses)
+    ? p.coverageAnalyses.map((c: any) => ({
+        ...c,
+        suggestedInternalLinks: Array.isArray(c?.suggestedInternalLinks) ? c.suggestedInternalLinks : [],
+        competingCitedDomains: Array.isArray(c?.competingCitedDomains) ? c.competingCitedDomains : [],
+      }))
+    : [];
   const opportunities = Array.isArray(p.opportunities) ? p.opportunities : [];
   const actionPlan = Array.isArray(p.actionPlan) ? p.actionPlan : Array.isArray(p.actionItems) ? p.actionItems : [];
   const groundedRuns = Array.isArray(p.groundedRuns) ? p.groundedRuns : [];
-  const clusters = Array.isArray(p.clusters) ? p.clusters : [];
+  const clusters = Array.isArray(p.clusters)
+    ? p.clusters.map((c: any) => ({
+        ...c,
+        supportingQueries: Array.isArray(c?.supportingQueries) ? c.supportingQueries : [],
+        relevantEntities: Array.isArray(c?.relevantEntities) ? c.relevantEntities : [],
+        queryClassifications: Array.isArray(c?.queryClassifications) ? c.queryClassifications : [],
+        intentMix: Array.isArray(c?.intentMix) ? c.intentMix : [],
+        journeyStages: Array.isArray(c?.journeyStages) ? c.journeyStages : [],
+      }))
+    : [];
   const testPrompts = Array.isArray(p.testPrompts) ? p.testPrompts : [];
 
   return {
@@ -318,9 +343,10 @@ export default function App() {
           competitorDomains: input.competitorDomains,
           businessObjective: input.businessObjective,
           preferredConversionAction: input.preferredConversionAction,
-          uploadedUrls: input.uploadedUrls,
+          // Keep the coverage prompt within the proxy's execution window. The
+          // sitemap verifier already expands verified sitemap URLs into this list.
+          uploadedUrls: input.uploadedUrls?.slice(0, 50),
           uploadedGscQueries: input.uploadedGscQueries,
-          sitemapUrls: input.sitemapUrl ? [input.sitemapUrl] : [],
         }),
       });
 
@@ -387,7 +413,7 @@ export default function App() {
         c.domain?.toLowerCase().includes(input.targetDomain.toLowerCase())
       ).length;
 
-      const newProject: AuditProject = {
+      const newProject: AuditProject = sanitizeProject({
         id: `proj-${Date.now()}`,
         name: `${input.destinationOrSubject || 'Audit'} - ${new Date().toLocaleDateString()}`,
         createdAt: new Date().toISOString(),
@@ -410,7 +436,7 @@ export default function App() {
           totalQueriesCount: allQueries.length || demoMontrealProject.queries.length,
           targetCitations: targetCitationsCount,
         },
-      };
+      });
 
       setSavedProjects((prev) => [newProject, ...prev]);
       setCurrentProject(newProject);

@@ -22,6 +22,16 @@ The proxy root URL may show `404 NOT_FOUND`; that is expected for an API-only pr
 - Stops the audit when a grounded run fails.
 - Sends country and language to grounded-search requests.
 - Sends uploaded Google Search Console query data to coverage analysis.
+- Prevents a blank page by validating nested result arrays and showing a recovery screen if a result component fails.
+- Stops resending an unverified sitemap URL during coverage analysis.
+- Caps a verified/manual coverage inventory at 50 URLs per audit to keep the AI request manageable.
+- Changes the default grounded-run count from five to three.
+
+## Required proxy timeout update
+
+The live test showed the coverage request failing at approximately 60 seconds. Copy `PROXY-FILES/vercel.json` to the root of the **gemini-proxy-2-pearl GitHub repository**, merge it with any existing proxy `vercel.json` settings, commit, and redeploy the proxy. This gives `api/query-fanout-auditor.js` up to 300 seconds.
+
+Do not upload the `PROXY-FILES` folder to the frontend repository as its active Vercel configuration; it belongs to the proxy repository.
 
 ## Verification
 

@@ -62,7 +62,7 @@ export const InitialForm: React.FC<InitialFormProps> = ({
   const [gscFileName, setGscFileName] = useState('');
   const [uploadedGscQueries, setUploadedGscQueries] = useState<Array<{ query: string; impressions?: number; clicks?: number; position?: number }>>([]);
   
-  const [runsCount, setRunsCount] = useState<number>(5);
+  const [runsCount, setRunsCount] = useState<number>(3);
   const [depth, setDepth] = useState<'Quick' | 'Standard' | 'Deep'>('Deep');
   const [showHowItWorks, setShowHowItWorks] = useState(false);
 
@@ -189,7 +189,7 @@ export const InitialForm: React.FC<InitialFormProps> = ({
     setBusinessObjective('Help travellers plan their visit and discover relevant private tour experiences.');
     setPreferredConversionAction('Book a customised private tour with a verified local guide');
     setSitemapUrl('https://www.toursbylocals.com/sitemap_destinations_ca.xml');
-    setRunsCount(5);
+    setRunsCount(3);
     setDepth('Deep');
   };
 

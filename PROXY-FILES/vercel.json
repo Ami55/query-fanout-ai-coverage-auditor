@@ -1,0 +1,7 @@
+{
+  "functions": {
+    "api/query-fanout-auditor.js": {
+      "maxDuration": 300
+    }
+  }
+}
