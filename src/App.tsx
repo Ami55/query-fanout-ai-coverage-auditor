@@ -50,6 +50,24 @@ import {
 
 const STORAGE_KEY = 'query_fanout_saved_projects_v1';
 
+async function readProxyError(response: Response, fallback: string): Promise<string> {
+  try {
+    const payload = await response.json();
+    const rawMessage = payload?.error || payload?.message;
+    if (typeof rawMessage === 'string') {
+      try {
+        const nested = JSON.parse(rawMessage);
+        return nested?.error?.message || nested?.message || rawMessage;
+      } catch {
+        return rawMessage;
+      }
+    }
+  } catch {
+    // The proxy may return an empty or non-JSON Vercel error response.
+  }
+  return `${fallback} (HTTP ${response.status})`;
+}
+
 function sanitizeProject(p: any): AuditProject {
   if (!p) return demoMontrealProject;
   const queries = Array.isArray(p.queries) ? p.queries : [];
@@ -228,7 +246,7 @@ export default function App() {
           `Generated ${predictedQueries.length} predicted queries across multiple clusters.`,
         ]);
       } else {
-        setLogMessages((prev) => [...prev, 'Notice: Using local fallbacks for query fan-out.']);
+        throw new Error(await readProxyError(fanoutRes, 'Query fan-out generation failed'));
       }
 
       // Stage 3: Live Grounded Searches (Run grounded runs)
@@ -251,6 +269,8 @@ export default function App() {
               totalRuns: runsCount,
               targetDomain: input.targetDomain,
               competitorDomains: input.competitorDomains,
+              country: input.country,
+              language: input.language,
             }),
           });
           if (runRes.ok) {
@@ -260,9 +280,12 @@ export default function App() {
               ...prev,
               `Run ${i} completed: ${runData.executedSearchQueries?.length || 0} observed search queries captured.`,
             ]);
+          } else {
+            throw new Error(await readProxyError(runRes, `Grounded Search Run ${i} failed`));
           }
         } catch (err) {
           console.error(`Run ${i} failed`, err);
+          throw err;
         }
       }
 
@@ -296,6 +319,7 @@ export default function App() {
           businessObjective: input.businessObjective,
           preferredConversionAction: input.preferredConversionAction,
           uploadedUrls: input.uploadedUrls,
+          uploadedGscQueries: input.uploadedGscQueries,
           sitemapUrls: input.sitemapUrl ? [input.sitemapUrl] : [],
         }),
       });
@@ -303,6 +327,8 @@ export default function App() {
       let auditResult: any = null;
       if (coverageRes.ok) {
         auditResult = await coverageRes.json();
+      } else {
+        throw new Error(await readProxyError(coverageRes, 'Website coverage analysis failed'));
       }
 
       // Stage 8: Preparing recommendations
@@ -392,7 +418,9 @@ export default function App() {
       setActiveTab('overview');
     } catch (e: any) {
       console.error('Audit execution error', e);
-      setLogMessages((prev) => [...prev, `Error encountered: ${e.message}. Loaded sample analysis.`]);
+      const message = e?.message || 'The analysis could not be completed.';
+      setLogMessages((prev) => [...prev, `Analysis stopped: ${message}`]);
+      window.alert(`Query Fan-out Analysis failed:\n\n${message}\n\nCheck the Gemini API billing/key in the gemini-proxy-2-pearl Vercel project, then try again.`);
     } finally {
       setIsAnalyzing(false);
     }
