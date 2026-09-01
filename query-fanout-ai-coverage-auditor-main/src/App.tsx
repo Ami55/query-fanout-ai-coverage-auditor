@@ -763,20 +763,17 @@ export default function App() {
     setSavedProjects((prev) => prev.map((p) => (p.id === updatedProj.id ? updatedProj : p)));
   };
 
-  const workflowTabs = [
-    { id: 'overview', label: 'Start Here', icon: LayoutDashboard },
-    { id: 'coverage', label: '1. Find Gaps', icon: CheckSquare, count: projectCoverage.length },
-    { id: 'actions', label: '2. Do the Work', icon: FileCheck, count: projectActionPlan.length },
-    { id: 'prompts', label: '3. Test Results', icon: Send, count: projectTestPrompts.length },
-  ];
-
-  const reportTabs = [
+  const navTabs = [
+    { id: 'overview', label: 'Executive Overview', icon: LayoutDashboard },
     { id: 'fanout', label: 'Fan-out Explorer', icon: GitBranch, count: projectQueries.length },
     { id: 'clusters', label: 'Query Clusters', icon: Layers, count: projectClusters.length },
+    { id: 'prompts', label: 'Prompts to Test', icon: Send, count: projectTestPrompts.length },
     { id: 'grounded', label: 'Live Grounded Analysis', icon: Globe, count: projectGroundedRuns.length },
+    { id: 'coverage', label: 'Website Coverage', icon: CheckSquare, count: projectCoverage.length },
     { id: 'entities', label: 'Entity Knowledge Map', icon: Compass, count: projectEntities.length },
     { id: 'citations', label: 'Citation & Competitor Gap', icon: Layers, count: projectCitations.length },
     { id: 'opportunities', label: 'Content Opportunities', icon: Zap, count: projectOpportunities.length },
+    { id: 'actions', label: 'Action Plan Backlog', icon: FileCheck, count: projectActionPlan.length },
     { id: 'how-it-works', label: 'How It Works Guide', icon: BookOpen },
     { id: 'saved', label: 'Saved Audits & Diff', icon: FolderOpen, count: (savedProjects || []).length },
   ];
@@ -807,11 +804,10 @@ export default function App() {
           />
         ) : (
           <div className="space-y-6">
-            {/* Decision-led workflow navigation */}
-            <div className="bg-white rounded-2xl p-2 border border-slate-200 shadow-2xs flex flex-col lg:flex-row lg:items-center gap-2">
-              <div className="px-2 text-[10px] font-bold uppercase tracking-widest text-slate-400 shrink-0">Your workflow</div>
-              <nav className="flex items-center gap-1 overflow-x-auto flex-1">
-                {workflowTabs.map((tab) => {
+            {/* Primary Navigation Tabs */}
+            <div className="bg-white rounded-2xl p-1.5 border border-slate-200 shadow-2xs overflow-x-auto">
+              <nav className="flex items-center gap-1 min-w-max">
+                {navTabs.map((tab) => {
                   const Icon = tab.icon;
                   const isActive = activeTab === tab.id;
 
@@ -842,42 +838,6 @@ export default function App() {
                   );
                 })}
               </nav>
-              <details className="relative shrink-0 group">
-                <summary className={`list-none px-3.5 py-2.5 rounded-xl text-xs font-bold flex items-center gap-2 cursor-pointer select-none ${
-                  reportTabs.some((tab) => tab.id === activeTab)
-                    ? 'bg-slate-900 text-white'
-                    : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
-                }`}>
-                  <BookOpen className="w-4 h-4" />
-                  Supporting reports
-                  <span className="text-[10px] opacity-70">{reportTabs.length}</span>
-                </summary>
-                <div className="absolute right-0 z-30 mt-2 w-80 rounded-2xl border border-slate-200 bg-white p-2 shadow-xl grid gap-1">
-                  <div className="px-3 py-2 text-[11px] text-slate-500 border-b border-slate-100">
-                    Use these when you need to investigate the evidence behind an action.
-                  </div>
-                  {reportTabs.map((tab) => {
-                    const Icon = tab.icon;
-                    const isActive = activeTab === tab.id;
-                    return (
-                      <button
-                        key={tab.id}
-                        onClick={(event) => {
-                          setActiveTab(tab.id);
-                          event.currentTarget.closest('details')?.removeAttribute('open');
-                        }}
-                        className={`w-full px-3 py-2.5 rounded-xl text-xs font-semibold flex items-center gap-2 text-left cursor-pointer ${
-                          isActive ? 'bg-slate-900 text-white' : 'text-slate-700 hover:bg-slate-50'
-                        }`}
-                      >
-                        <Icon className={`w-4 h-4 ${isActive ? 'text-teal-300' : 'text-slate-400'}`} />
-                        <span className="flex-1">{tab.label}</span>
-                        {tab.count !== undefined && <span className="text-[10px] opacity-70">{tab.count}</span>}
-                      </button>
-                    );
-                  })}
-                </div>
-              </details>
             </div>
 
             {/* Active Tab View Rendering */}

@@ -74,7 +74,6 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({ project, onNavigateTab
   const citations = project?.citations || [];
   const coverageAnalyses = project?.coverageAnalyses || [];
   const opportunities = project?.opportunities || [];
-  const actionItems = project?.actionPlan || project?.actionItems || [];
 
   // Group queries by cluster for visual breakdown
   const clusterCounts = queries.reduce((acc, q) => {
@@ -94,76 +93,6 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({ project, onNavigateTab
 
   return (
     <div className="space-y-8">
-      {/* Plain-language workflow: reports support these decisions, not the other way around. */}
-      <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-2xs space-y-5">
-        <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-3">
-          <div>
-            <span className="text-[11px] font-bold uppercase tracking-wider text-teal-700">Start here</span>
-            <h2 className="text-2xl font-bold text-slate-900 mt-1">Turn this audit into work</h2>
-            <p className="text-sm text-slate-600 mt-1 max-w-3xl">
-              You do not need to read every report. Follow these three steps; open a supporting report only when you need more evidence.
-            </p>
-          </div>
-          <button
-            onClick={() => onNavigateTab('actions')}
-            className="inline-flex items-center justify-center gap-2 rounded-xl bg-slate-900 px-5 py-3 text-sm font-bold text-white hover:bg-slate-800 cursor-pointer"
-          >
-            Open my action plan <ArrowRight className="w-4 h-4" />
-          </button>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <button onClick={() => onNavigateTab('coverage')} className="text-left rounded-2xl border border-amber-200 bg-amber-50/60 p-5 hover:border-amber-400 transition-colors cursor-pointer">
-            <div className="flex items-center justify-between">
-              <span className="w-8 h-8 rounded-full bg-amber-500 text-white flex items-center justify-center font-bold">1</span>
-              <span className="text-xs font-bold text-amber-800">{notCoveredCount + partiallyCoveredCount} gaps</span>
-            </div>
-            <h3 className="font-bold text-slate-900 mt-4">Find what is missing</h3>
-            <p className="text-xs text-slate-600 mt-1 leading-relaxed">See which customer questions have no good page, or a page that needs improvement.</p>
-            <span className="text-xs font-bold text-amber-800 mt-4 inline-flex items-center gap-1">Open coverage gaps <ArrowRight className="w-3.5 h-3.5" /></span>
-          </button>
-
-          <button onClick={() => onNavigateTab('actions')} className="text-left rounded-2xl border border-blue-200 bg-blue-50/60 p-5 hover:border-blue-400 transition-colors cursor-pointer">
-            <div className="flex items-center justify-between">
-              <span className="w-8 h-8 rounded-full bg-blue-600 text-white flex items-center justify-center font-bold">2</span>
-              <span className="text-xs font-bold text-blue-800">{actionItems.length} actions</span>
-            </div>
-            <h3 className="font-bold text-slate-900 mt-4">Make the recommended changes</h3>
-            <p className="text-xs text-slate-600 mt-1 leading-relaxed">Work through Do now, Do next, and Monitor. Each item explains the change, completion criteria, and verification.</p>
-            <span className="text-xs font-bold text-blue-800 mt-4 inline-flex items-center gap-1">Open action plan <ArrowRight className="w-3.5 h-3.5" /></span>
-          </button>
-
-          <button onClick={() => onNavigateTab('prompts')} className="text-left rounded-2xl border border-emerald-200 bg-emerald-50/60 p-5 hover:border-emerald-400 transition-colors cursor-pointer">
-            <div className="flex items-center justify-between">
-              <span className="w-8 h-8 rounded-full bg-emerald-600 text-white flex items-center justify-center font-bold">3</span>
-              <span className="text-xs font-bold text-emerald-800">{(project?.testPrompts || []).length} tests</span>
-            </div>
-            <h3 className="font-bold text-slate-900 mt-4">Test whether it worked</h3>
-            <p className="text-xs text-slate-600 mt-1 leading-relaxed">Use the saved prompts before and after publishing, then compare mentions, citations, and coverage.</p>
-            <span className="text-xs font-bold text-emerald-800 mt-4 inline-flex items-center gap-1">Open test prompts <ArrowRight className="w-3.5 h-3.5" /></span>
-          </button>
-        </div>
-
-        <details className="rounded-xl border border-slate-200 bg-slate-50">
-          <summary className="cursor-pointer px-4 py-3 text-sm font-bold text-slate-800">Which supporting report should I use?</summary>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-3 border-t border-slate-200 p-4 text-xs">
-            {[
-              ['Fan-out Explorer / Query Clusters', 'Use when planning topics, page sections, and related questions.'],
-              ['Website Coverage', 'Use to decide whether to update an existing URL or create a new page.'],
-              ['Citation & Competitor Gap', 'Use when competitors appear in AI answers but your site does not.'],
-              ['Entity Knowledge Map', 'Use while editing a page to add missing people, places, concepts, and context.'],
-              ['Content Opportunities', 'Use to understand why an action received its priority score.'],
-              ['Live Grounded Analysis', 'Use as supporting evidence; it is not a separate task list.'],
-            ].map(([name, use]) => (
-              <div key={name} className="flex gap-3">
-                <CheckCircle2 className="w-4 h-4 text-teal-600 shrink-0 mt-0.5" />
-                <p><strong className="text-slate-900">{name}:</strong> <span className="text-slate-600">{use}</span></p>
-              </div>
-            ))}
-          </div>
-        </details>
-      </section>
-
       {/* Top Seed Prompt Banner */}
       <div className="bg-white rounded-2xl p-6 border border-slate-200 shadow-2xs space-y-4">
         <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 border-b border-slate-100 pb-4">
