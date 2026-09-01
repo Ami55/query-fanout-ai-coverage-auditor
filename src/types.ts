@@ -303,6 +303,12 @@ export interface ActionItem {
   status: ActionStatus;
   notes: string;
   createdAt: string;
+  executionQueue?: 'Do now' | 'Do next' | 'Monitor';
+  problem?: string;
+  requiredChange?: string;
+  completionChecklist?: string[];
+  verificationPlan?: string[];
+  successMetric?: string;
 }
 
 export interface AuditProjectInput {

@@ -70,31 +70,36 @@ async function readProxyError(response: Response, fallback: string): Promise<str
 
 function sanitizeProject(p: any): AuditProject {
   if (!p) return demoMontrealProject;
+  const destination = String(p.input?.destinationOrSubject || '').toLowerCase();
+  const removeLeakedDemoRows = (items: any[]) => {
+    if (p.isDemo || destination.includes('montreal')) return items;
+    return items.filter((item) => !JSON.stringify(item).toLowerCase().includes('montreal'));
+  };
   const queries = Array.isArray(p.queries)
-    ? p.queries.map((q: any) => ({ ...q, relevantEntities: Array.isArray(q?.relevantEntities) ? q.relevantEntities : [] }))
+    ? removeLeakedDemoRows(p.queries).map((q: any) => ({ ...q, relevantEntities: Array.isArray(q?.relevantEntities) ? q.relevantEntities : [] }))
     : [];
   const entities = Array.isArray(p.entities)
-    ? p.entities.map((e: any) => ({ ...e, relevantQueryClusters: Array.isArray(e?.relevantQueryClusters) ? e.relevantQueryClusters : [] }))
+    ? removeLeakedDemoRows(p.entities).map((e: any) => ({ ...e, relevantQueryClusters: Array.isArray(e?.relevantQueryClusters) ? e.relevantQueryClusters : [] }))
     : [];
   const citations = Array.isArray(p.citations)
-    ? p.citations.map((c: any) => ({
+    ? removeLeakedDemoRows(p.citations).map((c: any) => ({
         ...c,
         associatedQueries: Array.isArray(c?.associatedQueries) ? c.associatedQueries : [],
         supportedStatements: Array.isArray(c?.supportedStatements) ? c.supportedStatements : [],
       }))
     : [];
   const coverage = Array.isArray(p.coverageAnalyses)
-    ? p.coverageAnalyses.map((c: any) => ({
+    ? removeLeakedDemoRows(p.coverageAnalyses).map((c: any) => ({
         ...c,
         suggestedInternalLinks: Array.isArray(c?.suggestedInternalLinks) ? c.suggestedInternalLinks : [],
         competingCitedDomains: Array.isArray(c?.competingCitedDomains) ? c.competingCitedDomains : [],
       }))
     : [];
-  const opportunities = Array.isArray(p.opportunities) ? p.opportunities : [];
-  const actionPlan = Array.isArray(p.actionPlan) ? p.actionPlan : Array.isArray(p.actionItems) ? p.actionItems : [];
-  const groundedRuns = Array.isArray(p.groundedRuns) ? p.groundedRuns : [];
+  const opportunities = Array.isArray(p.opportunities) ? removeLeakedDemoRows(p.opportunities) : [];
+  const actionPlan = Array.isArray(p.actionPlan) ? removeLeakedDemoRows(p.actionPlan) : Array.isArray(p.actionItems) ? removeLeakedDemoRows(p.actionItems) : [];
+  const groundedRuns = Array.isArray(p.groundedRuns) ? removeLeakedDemoRows(p.groundedRuns) : [];
   const clusters = Array.isArray(p.clusters)
-    ? p.clusters.map((c: any) => ({
+    ? removeLeakedDemoRows(p.clusters).map((c: any) => ({
         ...c,
         supportingQueries: Array.isArray(c?.supportingQueries) ? c.supportingQueries : [],
         relevantEntities: Array.isArray(c?.relevantEntities) ? c.relevantEntities : [],
@@ -103,7 +108,7 @@ function sanitizeProject(p: any): AuditProject {
         journeyStages: Array.isArray(c?.journeyStages) ? c.journeyStages : [],
       }))
     : [];
-  const testPrompts = Array.isArray(p.testPrompts) ? p.testPrompts : [];
+  const testPrompts = Array.isArray(p.testPrompts) ? removeLeakedDemoRows(p.testPrompts) : [];
 
   return {
     ...p,
@@ -413,6 +418,131 @@ export default function App() {
         c.domain?.toLowerCase().includes(input.targetDomain.toLowerCase())
       ).length;
 
+      const currentCoverage: PageCoverageAnalysis[] = Array.isArray(auditResult?.coverageAnalyses)
+        ? auditResult.coverageAnalyses
+        : [];
+      const currentOpportunities: ContentOpportunity[] = Array.isArray(auditResult?.opportunities)
+        ? auditResult.opportunities
+        : [];
+      const rawActionPlan: ActionItem[] = Array.isArray(auditResult?.actionPlan)
+        ? auditResult.actionPlan
+        : Array.isArray(auditResult?.actionItems) ? auditResult.actionItems : [];
+      const generatedActions: ActionItem[] = currentCoverage.map((coverage, index) => {
+        const matchingOpportunity = currentOpportunities.find((item) => item.query === coverage.query);
+        const isUrgent = coverage.isCompetitorCited || matchingOpportunity?.priority === 'High priority';
+        const isMissing = coverage.coverageStatus === 'Not covered';
+        return {
+          id: `action-${Date.now()}-${index}`,
+          category: isMissing ? 'Create supporting content' : 'Update existing page',
+          title: isMissing ? `Create coverage for: ${coverage.query}` : `Improve coverage for: ${coverage.query}`,
+          supportingQuery: coverage.query,
+          recommendedUrl: coverage.mostRelevantUrl || matchingOpportunity?.recommendedPage || input.uploadedUrls?.[0] || `https://${input.targetDomain}`,
+          reason: coverage.missingInformation || `The current page is classified as ${coverage.coverageStatus.toLowerCase()} for this query.`,
+          evidence: coverage.isCompetitorCited
+            ? `Competitors are cited for this query${coverage.competingCitedDomains?.length ? `: ${coverage.competingCitedDomains.join(', ')}` : ''}.`
+            : `Coverage confidence: ${coverage.coverageConfidence || 0}%.`,
+          expectedImpact: isUrgent ? 'High' : coverage.coverageStatus === 'Partially covered' ? 'Medium' : 'Low',
+          effort: isMissing ? 'High' : 'Medium',
+          priority: isUrgent ? 'Immediate' : coverage.coverageStatus === 'Partially covered' ? 'High' : 'Medium',
+          owner: isMissing ? 'SEO strategist + Content writer' : 'Content writer + Destination expert',
+          status: 'Proposed',
+          notes: coverage.recommendedAction || matchingOpportunity?.recommendedAction || '',
+          createdAt: new Date().toISOString(),
+        } as ActionItem;
+      });
+      const currentActionPlan: ActionItem[] = (rawActionPlan.length > 0 ? rawActionPlan : generatedActions).map((item, index) => {
+        const matchingCoverage = currentCoverage.find((coverage) =>
+          coverage.query === item.supportingQuery || coverage.mostRelevantUrl === item.recommendedUrl
+        );
+        const queue: 'Do now' | 'Do next' | 'Monitor' =
+          item.priority === 'Immediate' || item.priority === 'High' ? 'Do now' :
+          item.priority === 'Medium' ? 'Do next' : 'Monitor';
+        const requiredChange = matchingCoverage
+          ? `${matchingCoverage.recommendedAction || 'Update the target page'}. ${matchingCoverage.missingInformation || ''}`.trim()
+          : item.notes || `Implement “${item.title}” on the target page.`;
+        return {
+          ...item,
+          id: item.id || `action-${Date.now()}-${index}`,
+          status: item.status || 'Proposed',
+          createdAt: item.createdAt || new Date().toISOString(),
+          owner: item.owner || 'SEO strategist',
+          executionQueue: queue,
+          problem: item.problem || item.reason,
+          requiredChange: item.requiredChange || requiredChange,
+          completionChecklist: item.completionChecklist?.length ? item.completionChecklist : [
+            'The target page or new content has been published.',
+            'The supporting query is answered directly under a descriptive heading.',
+            'Relevant entities, facts, and local-guide expertise have been added.',
+            'Relevant internal links and schema have been reviewed.',
+            'The final URL is indexable, canonical, and included in the appropriate sitemap.',
+          ],
+          verificationPlan: item.verificationPlan?.length ? item.verificationPlan : [
+            'Submit or inspect the page in Google Search Console after publishing.',
+            'Repeat the approved AI test prompts after 14 and 28 days.',
+            'Compare target-domain citations against the recorded competitor citations.',
+            'Review GSC impressions, clicks, CTR, and average position after 28 days.',
+          ],
+          successMetric: item.successMetric || `The target page is retrieved or cited for “${item.supportingQuery}”, with improving GSC visibility after 28 days.`,
+        };
+      });
+
+      const groupedQueries = new Map<string, FanoutQuery[]>();
+      allQueries.forEach((query) => {
+        const name = query.cluster || query.parentTopic || 'General query fan-out';
+        groupedQueries.set(name, [...(groupedQueries.get(name) || []), query]);
+      });
+      const generatedClusters: QueryCluster[] = Array.from(groupedQueries.entries()).map(([name, items], index) => {
+        const matchingCoverage = currentCoverage.find((item) => item.cluster === name);
+        return {
+          id: `cluster-${Date.now()}-${index}`,
+          name,
+          description: `Queries related to ${name.toLowerCase()} for ${input.destinationOrSubject || input.seedPrompt}.`,
+          primaryUserNeed: items[0]?.expectedAnswerType || items[0]?.query || input.seedPrompt,
+          representativeQuery: items[0]?.query || input.seedPrompt,
+          supportingQueries: items.slice(1).map((item) => item.query),
+          queryClassifications: Array.from(new Set(items.map((item) => item.classification))),
+          relevantEntities: Array.from(new Set(items.flatMap((item) => item.relevantEntities || []))),
+          intentMix: Array.from(new Set(items.map((item) => item.intent))),
+          journeyStages: Array.from(new Set(items.map((item) => item.funnelStage))),
+          existingTargetPage: matchingCoverage?.mostRelevantUrl || input.uploadedUrls?.[0] || `https://${input.targetDomain}`,
+          coverageStatus: matchingCoverage?.coverageStatus || 'Not evaluated',
+          recommendedContentFormat: 'Supporting article',
+          priority: items.some((item) => item.commercialRelevance >= 4) ? 'High priority' : 'Medium priority',
+          humanApproved: false,
+          selectedForTesting: true,
+        } as QueryCluster;
+      });
+      const currentClusters: QueryCluster[] = Array.isArray(auditResult?.clusters) && auditResult.clusters.length > 0
+        ? auditResult.clusters
+        : generatedClusters;
+      const generatedPrompts: ApprovedTestPrompt[] = currentClusters.slice(0, 10).map((cluster, index) => ({
+        prompt_id: `prompt-${Date.now()}-${index}`,
+        project_id: `proj-${Date.now()}`,
+        project_name: `${input.destinationOrSubject || 'Query Fan-out'} Audit`,
+        seed_prompt: input.seedPrompt,
+        test_prompt: cluster.representativeQuery,
+        prompt_variation_type: 'Specific question',
+        query_cluster: cluster.name,
+        search_intent: String(cluster.intentMix?.[0] || 'Informational'),
+        journey_stage: String(cluster.journeyStages?.[0] || 'Research'),
+        subject: input.destinationOrSubject || input.seedPrompt,
+        audience: input.targetAudience,
+        country: input.country,
+        language: input.language,
+        target_domain: input.targetDomain,
+        target_url: cluster.existingTargetPage || input.uploadedUrls?.[0] || `https://${input.targetDomain}`,
+        competitor_domains: input.competitorDomains || [],
+        business_objective: input.businessObjective,
+        business_priority: cluster.priority,
+        reason_for_testing: `Test AI visibility for the ${cluster.name} query cluster.`,
+        source_classification: String(cluster.queryClassifications?.[0] || 'AI-Predicted Fan-out'),
+        approval_status: 'Pending',
+        selectedForExport: true,
+      } as ApprovedTestPrompt));
+      const currentTestPrompts: ApprovedTestPrompt[] = Array.isArray(auditResult?.testPrompts) && auditResult.testPrompts.length > 0
+        ? auditResult.testPrompts
+        : generatedPrompts;
+
       const newProject: AuditProject = sanitizeProject({
         id: `proj-${Date.now()}`,
         name: `${input.destinationOrSubject || 'Audit'} - ${new Date().toLocaleDateString()}`,
@@ -420,21 +550,32 @@ export default function App() {
         updatedAt: new Date().toISOString(),
         isDemo: false,
         input,
-        groundedRuns: completedRuns.length > 0 ? completedRuns : demoMontrealProject.groundedRuns,
-        queries: allQueries.length > 0 ? allQueries : demoMontrealProject.queries,
-        citations: extractedCitations.length > 0 ? extractedCitations : demoMontrealProject.citations,
-        entities: auditResult?.entities || (initialEntities.length > 0 ? initialEntities : demoMontrealProject.entities),
-        coverageAnalyses: auditResult?.coverageAnalyses || demoMontrealProject.coverageAnalyses,
-        opportunities: auditResult?.opportunities || demoMontrealProject.opportunities,
-        actionPlan: auditResult?.actionPlan || auditResult?.actionItems || demoMontrealProject.actionPlan,
-        actionItems: auditResult?.actionPlan || auditResult?.actionItems || demoMontrealProject.actionPlan,
-        clusters: auditResult?.clusters || demoMontrealProject.clusters || [],
-        testPrompts: auditResult?.testPrompts || demoMontrealProject.testPrompts || [],
+        groundedRuns: completedRuns,
+        queries: allQueries,
+        citations: extractedCitations,
+        entities: Array.isArray(auditResult?.entities) ? auditResult.entities : initialEntities,
+        coverageAnalyses: currentCoverage,
+        opportunities: currentOpportunities,
+        actionPlan: currentActionPlan,
+        actionItems: currentActionPlan,
+        clusters: currentClusters,
+        testPrompts: currentTestPrompts,
         summary: auditResult?.summary || {
-          ...demoMontrealProject.summary,
-          totalQueries: allQueries.length || demoMontrealProject.queries.length,
-          totalQueriesCount: allQueries.length || demoMontrealProject.queries.length,
+          totalQueries: allQueries.length,
+          totalQueriesCount: allQueries.length,
+          observedQueriesCount: allQueries.filter((query) => query.classification === 'Observed Gemini Search Query').length,
+          predictedQueriesCount: allQueries.filter((query) => query.classification === 'AI-Predicted Fan-out').length,
+          serpValidatedCount: allQueries.filter((query) => query.classification === 'SERP-Validated Query').length,
+          gscObservedCount: allQueries.filter((query) => query.classification === 'GSC-Observed Query').length,
+          clustersCount: currentClusters.length,
+          entitiesCount: (Array.isArray(auditResult?.entities) ? auditResult.entities : initialEntities).length,
+          sourcesCount: extractedCitations.length,
           targetCitations: targetCitationsCount,
+          competitorCitations: extractedCitations.filter((citation) => citation.isCompetitor).length,
+          coveredCount: currentCoverage.filter((item) => item.coverageStatus === 'Covered').length,
+          partiallyCoveredCount: currentCoverage.filter((item) => item.coverageStatus === 'Partially covered').length,
+          missingCount: currentCoverage.filter((item) => item.coverageStatus === 'Not covered').length,
+          highPriorityOpportunities: currentOpportunities.filter((item) => item.priority === 'High priority').length,
         },
       });
 

@@ -86,15 +86,15 @@ export const InitialForm: React.FC<InitialFormProps> = ({
     setSitemapMessage('Connecting to sitemap endpoint...');
 
     try {
-      const res = await fetch(QUERY_FANOUT_PROXY_URL, {
+      const res = await fetch('/api/fetch-sitemap', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'fetch-sitemap', sitemapUrl }),
+        body: JSON.stringify({ sitemapUrl }),
       });
       const data = await res.json();
       if (!res.ok) {
         setSitemapStatus('error');
-        setSitemapMessage(data.error || 'Failed to fetch sitemap. Remote server blocked or timed out.');
+        setSitemapMessage(data.error || 'The sitemap could not be accessed. Upload the XML file below.');
       } else {
         setSitemapStatus('success');
         setSitemapMessage(`Successfully indexed ${data.extractedUrlsCount} destination & canonical URLs.`);
@@ -114,7 +114,18 @@ export const InitialForm: React.FC<InitialFormProps> = ({
     reader.onload = (event) => {
       const content = event.target?.result as string;
       if (content) {
-        setUrlListText(content);
+        const xmlUrls = Array.from(content.matchAll(/<loc\b[^>]*>([\s\S]*?)<\/loc>/gi))
+          .map((match) => match[1].replace(/^<!\[CDATA\[|\]\]>$/g, '').replace(/&amp;/g, '&').trim())
+          .filter((url) => /^https?:\/\//i.test(url));
+        if (xmlUrls.length > 0) {
+          const uniqueUrls = Array.from(new Set(xmlUrls));
+          setUrlListText(uniqueUrls.join('\n'));
+          setExtractedSitemapUrls(uniqueUrls);
+          setSitemapStatus('success');
+          setSitemapMessage(`Successfully imported ${uniqueUrls.length} URLs from the uploaded sitemap file.`);
+        } else {
+          setUrlListText(content);
+        }
       }
     };
     reader.readAsText(file);
@@ -486,7 +497,7 @@ export const InitialForm: React.FC<InitialFormProps> = ({
               <div className="flex flex-col">
                 <div className="flex items-center justify-between mb-1.5 h-5">
                   <label htmlFor="urlListText" className="block text-xs font-semibold text-slate-800">
-                    Upload URL List / Content (or Paste URLs)
+                    Upload Sitemap / URL List (or Paste URLs)
                   </label>
                 </div>
                 <textarea
@@ -498,8 +509,8 @@ export const InitialForm: React.FC<InitialFormProps> = ({
                 />
                 <div className="mt-1.5 flex items-center">
                   <label className="text-[11px] text-blue-600 hover:text-blue-700 hover:underline cursor-pointer inline-flex items-center gap-1 font-medium">
-                    <Upload className="w-3 h-3" /> Upload text or CSV file
-                    <input type="file" accept=".txt,.csv" onChange={handleUrlFileUpload} className="hidden" />
+                    <Upload className="w-3 h-3" /> Upload XML, text or CSV file
+                    <input type="file" accept=".xml,.txt,.csv,text/xml,application/xml" onChange={handleUrlFileUpload} className="hidden" />
                   </label>
                 </div>
               </div>

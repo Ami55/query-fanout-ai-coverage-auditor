@@ -18,6 +18,9 @@ import {
   Users,
   ShieldCheck,
   FileCheck,
+  ListChecks,
+  Target,
+  AlertTriangle,
 } from 'lucide-react';
 
 interface ActionPlanTabProps {
@@ -44,6 +47,7 @@ export const ActionPlanTab: React.FC<ActionPlanTabProps> = ({
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [selectedStatus, setSelectedStatus] = useState<string>('all');
   const [searchFilter, setSearchFilter] = useState('');
+  const [selectedQueue, setSelectedQueue] = useState<string>('all');
 
   const filteredItems = useMemo(() => {
     return (actionItems || []).filter((item) => {
@@ -59,9 +63,16 @@ export const ActionPlanTab: React.FC<ActionPlanTabProps> = ({
       }
       if (selectedCategory !== 'all' && item.category !== selectedCategory) return false;
       if (selectedStatus !== 'all' && item.status !== selectedStatus) return false;
+      if (selectedQueue !== 'all' && item.executionQueue !== selectedQueue) return false;
       return true;
     });
-  }, [actionItems, searchFilter, selectedCategory, selectedStatus]);
+  }, [actionItems, searchFilter, selectedCategory, selectedStatus, selectedQueue]);
+
+  const queueCounts = useMemo(() => ({
+    'Do now': actionItems.filter((item) => item.executionQueue === 'Do now').length,
+    'Do next': actionItems.filter((item) => item.executionQueue === 'Do next').length,
+    Monitor: actionItems.filter((item) => item.executionQueue === 'Monitor').length,
+  }), [actionItems]);
 
   const handleStatusChange = (item: ActionItem, newStatus: ActionStatus) => {
     onUpdateActionItem({
@@ -140,6 +151,48 @@ export const ActionPlanTab: React.FC<ActionPlanTabProps> = ({
         </div>
       </div>
 
+      {/* Plain-language workflow */}
+      <div className="bg-slate-900 text-white rounded-2xl p-5 sm:p-6 shadow-lg">
+        <h3 className="text-sm font-bold flex items-center gap-2 mb-4">
+          <ListChecks className="w-5 h-5 text-teal-300" /> How to use this action plan
+        </h3>
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
+          {[
+            ['1', 'Choose a task', 'Start in Do now. Approve one task and assign its named owner.'],
+            ['2', 'Make the change', 'Use the target page, required change, and completion checklist in the task card.'],
+            ['3', 'Verify the result', 'Repeat the AI prompts and review Search Console after 14–28 days.'],
+          ].map(([number, title, text]) => (
+            <div key={number} className="rounded-xl bg-white/10 border border-white/15 p-3">
+              <div className="w-6 h-6 rounded-full bg-teal-300 text-slate-950 font-black flex items-center justify-center mb-2">{number}</div>
+              <div className="font-bold mb-1">{title}</div>
+              <p className="text-slate-300 leading-relaxed">{text}</p>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Execution queues */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+        {(['Do now', 'Do next', 'Monitor'] as const).map((queue) => (
+          <button
+            key={queue}
+            type="button"
+            onClick={() => setSelectedQueue(selectedQueue === queue ? 'all' : queue)}
+            className={`text-left rounded-xl border p-4 cursor-pointer transition-all ${selectedQueue === queue
+              ? 'bg-slate-900 text-white border-slate-900 shadow-md'
+              : 'bg-white text-slate-900 border-slate-200 hover:border-slate-400'}`}
+          >
+            <div className="flex items-center justify-between">
+              <span className="font-bold text-sm">{queue}</span>
+              <span className="rounded-full bg-teal-100 text-teal-900 px-2 py-0.5 text-xs font-black">{queueCounts[queue]}</span>
+            </div>
+            <p className={`text-[11px] mt-1 ${selectedQueue === queue ? 'text-slate-300' : 'text-slate-500'}`}>
+              {queue === 'Do now' ? 'High-value gaps and competitor citation losses.' : queue === 'Do next' ? 'Important supporting improvements.' : 'Lower-confidence ideas to validate first.'}
+            </p>
+          </button>
+        ))}
+      </div>
+
       {/* Action Items List by Category */}
       <div className="space-y-6">
         {CATEGORIES.map((cat) => {
@@ -202,6 +255,9 @@ export const ActionPlanTab: React.FC<ActionPlanTabProps> = ({
                             )}
                           </div>
                           <h4 className="text-sm font-bold text-slate-900 pt-0.5">{item.title}</h4>
+                          <span className="inline-flex mt-1 px-2 py-0.5 rounded bg-slate-900 text-white text-[10px] font-bold">
+                            {item.executionQueue || 'Do next'}
+                          </span>
                         </div>
 
                         {/* Status dropdown */}
@@ -220,14 +276,21 @@ export const ActionPlanTab: React.FC<ActionPlanTabProps> = ({
                         </div>
                       </div>
 
-                      {/* Reason & Evidence */}
+                      {/* Problem, evidence and exact change */}
+                      <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
+                        <div className="rounded-xl border border-rose-100 bg-rose-50/60 p-3">
+                          <h5 className="font-bold text-rose-900 flex items-center gap-1.5 mb-1"><AlertTriangle className="w-3.5 h-3.5" /> What is the problem?</h5>
+                          <p className="text-slate-700 leading-relaxed">{item.problem || item.reason}</p>
+                        </div>
+                        <div className="rounded-xl border border-teal-100 bg-teal-50/60 p-3">
+                          <h5 className="font-bold text-teal-900 flex items-center gap-1.5 mb-1"><Edit2 className="w-3.5 h-3.5" /> What exactly should change?</h5>
+                          <p className="text-slate-700 leading-relaxed">{item.requiredChange || item.notes || item.title}</p>
+                        </div>
+                      </div>
                       <div className="space-y-1">
-                        <p className="text-slate-700 leading-relaxed font-normal">
-                          {item.reason}
-                        </p>
                         {item.evidence && (
-                          <p className="text-slate-500 text-[11px] italic bg-slate-50 p-2 rounded-lg border border-slate-100">
-                            Evidence: {item.evidence}
+                          <p className="text-slate-600 text-[11px] bg-slate-50 p-2 rounded-lg border border-slate-100">
+                            <strong>Why it matters / evidence:</strong> {item.evidence}
                           </p>
                         )}
                       </div>
@@ -263,6 +326,24 @@ export const ActionPlanTab: React.FC<ActionPlanTabProps> = ({
                           <span className="px-2 py-0.5 rounded bg-slate-100 text-slate-800 text-[11px] border border-slate-200 inline-block">
                             “{item.supportingQuery}”
                           </span>
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 border-t border-slate-100 pt-3">
+                        <div>
+                          <h5 className="font-bold text-slate-900 flex items-center gap-1.5 mb-2"><CheckCircle2 className="w-4 h-4 text-emerald-600" /> Done when</h5>
+                          <ul className="space-y-1.5 text-[11px] text-slate-600">
+                            {(item.completionChecklist || []).map((step, index) => (
+                              <li key={index} className="flex items-start gap-2"><span className="mt-0.5 w-3.5 h-3.5 rounded border border-slate-300 bg-white shrink-0" />{step}</li>
+                            ))}
+                          </ul>
+                        </div>
+                        <div>
+                          <h5 className="font-bold text-slate-900 flex items-center gap-1.5 mb-2"><Target className="w-4 h-4 text-blue-600" /> How to verify it worked</h5>
+                          <ol className="space-y-1.5 text-[11px] text-slate-600 list-decimal list-inside">
+                            {(item.verificationPlan || []).map((step, index) => <li key={index}>{step}</li>)}
+                          </ol>
+                          {item.successMetric && <p className="mt-2 p-2 rounded-lg bg-blue-50 border border-blue-100 text-[11px] text-blue-900"><strong>Success:</strong> {item.successMetric}</p>}
                         </div>
                       </div>
 
