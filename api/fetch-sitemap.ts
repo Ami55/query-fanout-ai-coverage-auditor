@@ -103,7 +103,7 @@ export default async function handler(req: any, res: any) {
     const timedOut = error?.name === 'AbortError';
     return res.status(blocked ? 403 : timedOut ? 504 : 500).json({
       error: blocked
-        ? 'ToursByLocals blocked the server request. Your sitemap may still be valid—download and upload the XML file below.'
+        ? 'The website blocked the server request. Your sitemap may still be valid—download and upload the XML file below.'
         : timedOut
           ? 'The sitemap request timed out. Upload the XML file below.'
           : error?.message || 'The sitemap could not be read.',
