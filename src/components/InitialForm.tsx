@@ -37,7 +37,7 @@ export const InitialForm: React.FC<InitialFormProps> = ({
   const [seedPrompt, setSeedPrompt] = useState('What should a first-time traveller know before visiting Montreal?');
   const [destinationOrSubject, setDestinationOrSubject] = useState('Montreal');
   const [targetAudience, setTargetAudience] = useState('First-time travellers aged 55+');
-  const [targetDomain, setTargetDomain] = useState('toursbylocals.com');
+  const [targetDomain, setTargetDomain] = useState('example.com');
   const [competitorInput, setCompetitorInput] = useState('');
   const [competitorDomains, setCompetitorDomains] = useState<string[]>([
     'getyourguide.com',
@@ -195,11 +195,11 @@ export const InitialForm: React.FC<InitialFormProps> = ({
     setSeedPrompt('What should a first-time traveller know before visiting Montreal?');
     setDestinationOrSubject('Montreal');
     setTargetAudience('First-time travellers aged 55+');
-    setTargetDomain('toursbylocals.com');
+    setTargetDomain('example.com');
     setCompetitorDomains(['getyourguide.com', 'viator.com', 'tripadvisor.ca']);
     setBusinessObjective('Help travellers plan their visit and discover relevant private tour experiences.');
     setPreferredConversionAction('Book a customised private tour with a verified local guide');
-    setSitemapUrl('https://www.toursbylocals.com/sitemap_destinations_ca.xml');
+    setSitemapUrl('https://example.com/sitemap_destinations_ca.xml');
     setRunsCount(3);
     setDepth('Deep');
   };
@@ -326,7 +326,7 @@ export const InitialForm: React.FC<InitialFormProps> = ({
                 value={targetDomain}
                 onChange={(e) => setTargetDomain(e.target.value)}
                 required
-                placeholder="e.g. toursbylocals.com"
+                placeholder="e.g. example.com"
                 className="w-full px-3.5 py-2 text-sm text-slate-900 bg-slate-50 border border-slate-300 rounded-lg focus:bg-white focus:ring-2 focus:ring-slate-900 outline-none"
               />
               <p className="text-[11px] text-slate-500 mt-1">
@@ -504,7 +504,7 @@ export const InitialForm: React.FC<InitialFormProps> = ({
                   id="urlListText"
                   value={urlListText}
                   onChange={(e) => setUrlListText(e.target.value)}
-                  placeholder="https://www.toursbylocals.com/Montreal-Tours&#10;https://www.toursbylocals.com/montreal-old-city-walking-tour"
+                  placeholder="https://example.com/Montreal-Tours&#10;https://example.com/montreal-old-city-walking-tour"
                   className="w-full h-28 px-3.5 py-2.5 text-xs font-mono text-slate-800 bg-slate-50 border border-slate-300 rounded-xl focus:bg-white focus:ring-2 focus:ring-slate-900 outline-none resize-none"
                 />
                 <div className="mt-1.5 flex items-center">
