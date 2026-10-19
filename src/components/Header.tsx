@@ -48,10 +48,10 @@ export const Header: React.FC<HeaderProps> = ({
               Demo data — not a live analysis
             </span>
             <span className="text-slate-700 hidden sm:inline">
-              Viewing Montreal Travel Planning (55+ Travellers) demo project for ToursByLocals.
+              Viewing Montreal Travel Planning (55+ Travellers) fictional demo project for Example Travel.
             </span>
             <span className="text-slate-600 sm:hidden">
-              Viewing Montreal demo for ToursByLocals.
+              Viewing Montreal fictional demo for Example Travel.
             </span>
             <button
               onClick={onNewAnalysis}

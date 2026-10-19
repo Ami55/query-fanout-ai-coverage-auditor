@@ -783,7 +783,7 @@ export const FanoutExplorerTab: React.FC<FanoutExplorerTabProps> = ({
                 <label className="block font-semibold text-slate-700 mb-1">Relevant Entities (comma separated)</label>
                 <input
                   name="entities"
-                  placeholder="e.g. Old Montreal, ToursByLocals, Cobblestones"
+                  placeholder="e.g. Old Montreal, Example Travel, Cobblestones"
                   className="w-full px-3 py-2 border border-slate-300 rounded-lg text-slate-800 outline-none"
                 />
               </div>
