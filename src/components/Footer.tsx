@@ -8,7 +8,7 @@ export const Footer: React.FC = () => {
         <div className="flex items-center gap-2">
           <Sparkles className="w-3.5 h-3.5 text-teal-600 shrink-0" />
           <p className="font-normal text-slate-600">
-            © 2026 Query Fan-out &amp; AI Coverage Auditor. Developed by <strong className="font-semibold text-teal-700">Ami - SEO Girl</strong>. All rights reserved.
+            © 2026 Query Fan-out &amp; AI Coverage Auditor. Developed by <strong className="font-semibold text-teal-700">SEO Girl - Ami</strong>. All rights reserved.
           </p>
         </div>
 
