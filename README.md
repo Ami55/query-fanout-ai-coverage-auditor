@@ -1,20 +1,37 @@
-<div align="center">
-<img width="1200" height="475" alt="GHBanner" src="https://ai.google.dev/static/site-assets/images/share-ais-513315318.png" />
-</div>
+# Query Fan-out Explorer
 
-# Run and deploy your AI Studio app
+Study how related searches and source coverage vary across repeated AI-assisted research runs.
 
-This contains everything you need to run your app locally.
+Built by [Ami Saeednia](https://www.seogirl.ca), SEO / GEO Strategist.
 
-View your app in AI Studio: https://ai.studio/apps/808639a7-a710-498b-bb27-fd3346b34bbb
+[Live app](https://seogirl-query-fanout-ai-coverage-auditor.vercel.app/) · [Research and studies](https://www.seogirl.ca/research/same-question-different-searches) · [All tools](https://www.seogirl.ca/apps)
 
-## Run Locally
+![Query Fan-out Explorer interface; landing view and any example data are illustrative](docs/screenshot.png)
 
-**Prerequisites:**  Node.js
+## The problem
 
+Study how related searches and source coverage vary across repeated AI-assisted research runs.
 
-1. Install dependencies:
-   `npm install`
-2. Set the `GEMINI_API_KEY` in [.env.local](.env.local) to your Gemini API key
-3. Run the app:
-   `npm run dev`
+## Who it is for
+
+Search researchers and content teams comparing query coverage, follow-ups and citations.
+
+## Workflow and methodology
+
+Define a topic and site, review the explicitly labelled demo, then compare repeated provider runs and coverage evidence. Keep run settings and captured metadata together so differences can be interpreted.
+
+## Evidence and limitations
+
+The default Montreal travel example is fictional. Provider-returned searches are observable metadata, not access to hidden reasoning or a reconstruction of Google AI Mode. Runs vary with provider, model, settings and time; missing metadata is not evidence that no search happened.
+
+The screenshot documents the interface, not an independently validated result. This repository is a practical research tool; its outputs require human review.
+
+## Local setup
+
+Use the repository root: `npm install`, `npm run dev`, `npm run lint`, and `npm run build`. The frontend uses the endpoint configured in `src/config.ts` (`QUERY_FANOUT_PROXY_URL`). Live analysis needs a compatible deployed backend; setting a Gemini key in the browser alone does not configure that backend. Keep provider credentials server-side. Check the configured backend and its data handling before using confidential inputs.
+
+Review `package.json` for the exact scripts and dependencies. Do not put secrets in frontend code or commit local environment files.
+
+## Background
+
+I build tools to make entity strategy, technical SEO and AI-search research easier to inspect and apply. Explore my [independent studies](https://www.seogirl.ca/research), [workbooks](https://www.seogirl.ca/workbooks) and [project case studies](https://www.seogirl.ca/case-studies).
